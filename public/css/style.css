@@ -1,0 +1,32 @@
+*{
+	margin: 0;
+	padding: 0
+}
+div.container {
+	margin-top: 10%;
+	padding: 15px;
+	background-color: #3f3b60;
+	/*background-image: url("idaptive.jpeg");*/
+	background-size: cover; 
+	width: 45vw;
+	height: auto;
+}
+label{
+	color: white;
+}
+.btn-primary {
+	background-color:  #2fd7bf;
+	border-color: #2fd7bf;
+	float: right;
+	margin-top:20px;
+}
+.btn-primary:hover {
+	background-color: #2fd7bf;
+	border-color: #fff;
+}
+#idaptiveLogo{
+	right: 0;
+}
+/*img{
+	width:40vw;
+}*/

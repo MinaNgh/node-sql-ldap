@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<link rel="stylesheet" href="./css/style.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Get Report</title>
+</head>
+<body>
+	<div class="container">
+		
+		<% if (message.length>0) { %>
+		<div class="flash alert alert-<%=type%> "><%= message %></div>
+		<!-- <div class="alert alert-danger flash"><%= type %></div> -->
+		<% } %>
+		<form  id="report-form" method="GET" action="/download-report" >
+		  <div class="form-group">
+		    <label for="startDate">Start Date</label>
+		    <input type="date" class="form-control" id="startDate" aria-describedby="startDateHelp" placeholder="Enter Strat Date" name="startDate" required="required">
+		    <!-- <small id="startDateHelp" class="form-text text-muted">We'll never share your email with anyone else.</small> -->
+		  </div>
+		  <div class="form-group">
+		    <label for="endDate" >End Date</label>
+		    <input type="date" class="form-control" id="endDate" placeholder="Enter End Date" name="endDate" required="required">
+		  </div>
+		  <div class="form-group">
+			<label for="type">Type</label>
+			<select class="form-control" id="type" name="type" required="required">
+				<option value="">Select type...</option>
+				<option value="INV">INV</option>
+				<option value="SO">SO</option>
+				<option value="CM-R">CM-R</option>				
+			</select>
+		  </div>
+		  <input type="submit" class="btn btn-primary" value="Download" id="download-btn"></input>
+		</form>
+		<img id="idaptiveLogo" src="./img/idaptive.jpeg" alt="">
+	</div>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	<script src="app.js"></script>
+</body>
+</html>
