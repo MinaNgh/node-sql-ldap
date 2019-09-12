@@ -9,7 +9,7 @@ var passport     = require('passport');
 var LdapStrategy = require('passport-ldapauth');
 var LdapAuth = require('ldapauth-fork');
 const tempfile = require('tempfile');
-//flash
+//flash message
 
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
@@ -24,7 +24,7 @@ app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 //flash
 app.use(cookieParser('secret'));
 app.use(session({
-  cookie:{maxAge:60000},
+  // cookie:{maxAge:60000},
   secret:'tetsgbjlsdfds',
   resave: true,
   saveUninitialized: true
@@ -50,7 +50,7 @@ app.use(function(req, res, next){
 // })
 // app.use(express.static(__dirname + '/views'));
 app.use(express.static(path.join(__dirname, 'public')));
-
+var sess;
 var ActiveDirectory = require('activedirectory');
 
 dotenv.config();
@@ -70,7 +70,8 @@ const { PORT,
   LDAP_USERNAME,
   LDAP_BIND_CREDENTIALS,
   LDAP_GROUP_SEARCH_BASE,
-  LDAP_GROUP_SEARCH_FILTER 
+  LDAP_GROUP_SEARCH_FILTER ,
+  AD_GROUP_NAME
 } = process.env;
 
 var config = { url: LDAP_URL,
@@ -139,8 +140,8 @@ app.get('/',function(req,res) {
 
 
 app.post('/login', function (req, res, next) {
-  passport.authenticate('ldapauth', {session: false}, function (err, user, info) {
-      console.log(info);
+  passport.authenticate('ldapauth', {session: true}, function (err, user, info) {
+      // console.log(info);
       if (err) {
           return next(err); // will generate a 500 error
           // es.redirect('/');
@@ -151,7 +152,7 @@ app.post('/login', function (req, res, next) {
           // return res.send({success: false, message: 'authentication failed'});
 
            // req.flash('info', 'invalid username or password');
-          req.flash('info', 'invalid username or password');
+          req.flash('info', 'Invalid username or password');
           req.flash('type', 'danger');
           res.redirect('/')
           // res.redirect('/');
@@ -159,7 +160,7 @@ app.post('/login', function (req, res, next) {
       }else{
       // return res.send({success: true, message: 'authentication succeeded'});
       var username = req.body.username;
-      var groupName = 'App Access - FinanceBizzApps';
+      var groupName = AD_GROUP_NAME;
           // var password = req.body.password;
           ad.isUserMemberOf(username, groupName, function(err, isMember) {
 
@@ -186,6 +187,9 @@ app.post('/login', function (req, res, next) {
 
              // req.flash('info', 'Success' );
              // res.render('get-report',{message:req.flash('Success!')});
+             sess = req.session;
+             sess.username = req.body.username;
+             sess.password = req.body.password;
              req.flash('info', 'Signed in successfully!');
              req.flash('type', 'info');
              res.redirect('/report');
@@ -200,16 +204,25 @@ app.post('/login', function (req, res, next) {
   })(req, res, next);
 });
 app.get('/report',function(req,res){
+  sess = req.session;
+  if(sess.username){
+    res.render('get-report', { message: req.flash('info'), type: req.flash('type') });
+  }else{
+    req.flash('info', 'Please login first!');
+    req.flash('type', 'danger');
+    res.redirect('/');
+  }
   
-  res.render('get-report', { message: req.flash('info'), type: req.flash('type') });
 })
 
-app.get('/download-report', function (req, res) {
-
-    var startDate = req.query.startDate;
-    var endDate = req.query.endDate;
-    var type = req.query.type;
-    console.log(startDate);
+app.post('/reportDownload', function (req, res) {
+  sess = req.session;
+  
+  if(sess.username){
+    var startDate = req.body.startDate;
+    var endDate = req.body.endDate;
+    var type = req.body.type;
+    
     // config for your database
    
     var config = {
@@ -217,7 +230,13 @@ app.get('/download-report', function (req, res) {
         password: SQL_PASSWORD,
         port: parseInt(SQL_PORT),
         server : SQL_SERVER,
-        database: SQL_DATABASE 
+        database: SQL_DATABASE,
+        connectionTimeout: 300000,
+        requestTimeout: 300000,
+        pool: {
+            idleTimeoutMillis: 300000,
+            max: 100
+        } 
     
     };
     //csv file fields
@@ -291,7 +310,8 @@ app.get('/download-report', function (req, res) {
     'NETSUITE_CUSTOMER_ID',
     'BUSINESS_UNIT',
     'STATUS'];
-    
+    //close sql
+    sql.close();
     // connect to your database
     sql.connect(config, function (err) {
     
@@ -450,7 +470,7 @@ app.get('/download-report', function (req, res) {
             
             if (err){
               console.log('SecondError:'+err);
-              req.flash('info', 'Oops...something went wrong, please contact a system administrator');
+              req.flash('info', 'Oops...something went wrong, please try it again');
               req.flash('type', 'danger');
               res.redirect('/report');
             } else{
@@ -486,15 +506,50 @@ app.get('/download-report', function (req, res) {
                   res.redirect('/report');
                 }
                 else{ 
-                  // res.download(path); 
+                  
                   // res.jsonp({success : true})
                   req.flash('info', 'Download has been successfully completed!');
                   req.flash('type', 'info');
-                  res.redirect('/report');
-                  // res.redirect('/');
+
+                  // res.download(path);
+                  res.send({ data: csv, type:type });
+
+                  // res.set({
+                  //   'Content-Type': 'text/plain',
+                  //   'Location': '/report'
+                  // });
+                  // res.redirect('/download-report'); 
+                  // res.download(path, function(err){
+                  //     if(err){
+                  //       req.flash('info', 'Oops...something went wrong, please contact a system administrator');
+                  //       req.flash('type', 'danger');
+                  //       res.redirect('/report');
+                  //     }else{
+                  //       res.redirect('/report'); 
+                  //     }
+                  // });
+                    // res.redirect('/report'); 
+                  // })
+                  // res.setHeader('data', csv);
+                  // res.redirect('/report',{'data':csv})
+    //               res.writeHead(200, { 'Content-Type': 'text/plain' });
+    // req.on('data', function (chunk) {
+    //     console.log('GOT DATA!');
+    // });
+    // res.end('callback(\'{\"msg\": \"OK\"}\')');
+                  // res.end('callback(\'{\"msg\": \"OK\"}\')');
+                  // res.json({success : "Updated Successfully", status : 200});
+                  // res.send('success'); 
+                  // res.send({ success: true });
+                   // res.writeHead(200, { 'success': true }); 
+                   // res.send(JSON.stringify(csv));
+                  // res.redirect('/report');
+                  // res.redirect('/report');
+  //                  res.contentType('json');
+  // res.send({ some: JSON.stringify({response:'json'}) });
                 }
             });
-            var tmp = tempfile('.csv');
+            // var tmp = tempfile('.csv');
             // fs.csv.writeFile(tmp).then(function() {
             //   console.log('file is written');
             //   res.download(tmp, function(err){
@@ -532,7 +587,22 @@ app.get('/download-report', function (req, res) {
         });
         
     });
+  }else{
+    req.flash('info', 'Please login first!');
+    req.flash('type', 'danger');
+    res.redirect('/');
+  }
     
+});
+
+app.get('/logout',(req,res) => {
+    req.session.destroy((err) => {
+        if(err) {
+            return console.log(err);
+        }
+        res.redirect('/');
+    });
+
 });
 // app.post('/login', 
 //     passport.authenticate('ldapauth', {
@@ -549,7 +619,7 @@ app.get('/download-report', function (req, res) {
 
 
 // run the server
-var server = app.listen(5005, function () {
+var server = app.listen(4004, function () {
     console.log('Server is running...');
 });
 module.exports = app;
